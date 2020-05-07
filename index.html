@@ -32,7 +32,6 @@
       }
       
       function getDirectory (cb) {
-        console.log('getDirectory()')
         let bits = decodeURIComponent(window.location.hash.replace('#', '')).split('&')
         for (let bit of bits) {
           let [key, value] = bit.split('=')
@@ -45,7 +44,6 @@
       }
 
       function getDirectoryContent (index, children) {
-        console.log('getDirectoryContent()')
         if (index === path.length) {
           let parent = path.join('/')
           return children.map(function (item) {
@@ -123,7 +121,6 @@
       }
       
       function updateContent () {
-        console.log('updateContent()')
         getDirectory(function () {
           if (tree.length > 0) {
             let content = getDirectoryContent(0, tree)
@@ -133,14 +130,12 @@
       }
       
       function clearSearch () {
-        console.log('clearSearch()')
         document.querySelector('#search').value = ''
         updateContent()
       }
       
       function doSearch (event = {}) {
         if (event.keyCode === 13) {
-          console.log('doSearch()')
           let term = document.querySelector('#search').value.toLowerCase()
           if (term.length === 0) {
             updateContent()
@@ -175,6 +170,22 @@
         return str
       }
       
+      function showMessage(message = '', title = 'Error!', className = 'is-danger') {
+        let html = `
+          <td colspan="3">
+            <div class="section">
+              <div class="message has-text-centered ${className}">
+                <h1 class='title'>${title}</h1>
+                <p>
+                  ${message}
+                </p>
+              </div>
+            </div>
+          </td>
+        `
+        document.querySelector('.files').innerHTML = html
+      }
+      
       function updateStatistics () {
         for (const item of tree) {
           if (item.type === 'report') {
@@ -188,25 +199,14 @@
         .then(function (response) {
           if (response.status === 200) {
             return response.json()
-          } else if (response.status === 404) {
-            let files = `
-              <td colspan="3">
-                <div class="section">
-                  <div class="is-danger message has-text-centered">
-                    <p>
-                      Could not load files.json. Did you create one?
-                    </p>
-                    <p>
-                      To create one: <code> tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json</code>
-                    </p>
-                  </div>
-                </div>
-              </td>
-            `
-            document.querySelector('.files').innerHTML = files
-          } else {
-            return []
           }
+          if (response.status === 404) {
+            showMessage('Could not load files.json. Did you forget to create one?')
+          }
+          if (response.status === 403) {
+            showMessage('Could not load files.json because the web server is not allowed to read it. Did you set correct file permission?')
+          }
+          return []
         })
         .then(function (data) {
           tree = data
@@ -215,7 +215,7 @@
           window.onhashchange = updateContent
         })
         .catch(function (error) {
-          console.log('asdf')
+          showMessage('Unexpected error happened while loading files.json. For a more detailed error message, see browser developer console.')
           console.log(error)
         })
     </script>

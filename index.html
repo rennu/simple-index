@@ -2,6 +2,7 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/biings-ds@1.41.1/build/bds.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <style type="text/css">
       table {
         width: 100%;
@@ -19,218 +20,18 @@
         cursor: pointer;
       }
     </style>
-    <script>
-      let exclude = ['index.html', 'files.json']
-      let path = ['.']
-      let tree = []
-      
-      function setBreadcrumbs (value) {
-        document.querySelector('.location').innerHTML = value
-          .join('/')
-          .replace(/^\./, '/')
-          .replace(/^\/\//, '/') // :D
-      }
-      
-      function getDirectory (cb) {
-        let bits = decodeURIComponent(window.location.hash.replace('#', '')).split('&')
-        for (let bit of bits) {
-          let [key, value] = bit.split('=')
-          if (key === 'path') {
-            path = decodeURI(value).split('/')
-            setBreadcrumbs(path)
-          }
-        }
-        cb()
-      }
-
-      function getDirectoryContent (index, children) {
-        if (index === path.length) {
-          let parent = path.join('/')
-          return children.map(function (item) {
-            return { ...item, parent }
-          })
-        } else {
-          let dirName = path[index]
-          for (let item of children) {
-            if (item.type === 'directory' && item.name === dirName) {
-              return getDirectoryContent(index + 1, item.contents)
-            }
-          }
-          return []
-        }
-      }
-      
-      function draw (content, highlight = '') {
-          let files = ''
-          if (path.length > 1) {
-            let newPath = encodeURI(path.slice(0, path.length - 1).join('/'))
-            files += `<tr>
-              <td>
-                <a href="#path=${newPath}" class="cell-shrink">
-                  <svg class="image is-24x24"><use xlink:href="#key_return-g"></use></svg>
-                </a>
-              </td>
-              <td>
-                <a href="#path=${newPath}">Parent</a>
-              </td>
-              <td class="cell-shrink">
-                <a href="#path=${newPath}">&nbsp;</a>
-              </td>
-            </tr>`
-          }
-
-          for (let item of content) {
-            if (exclude.indexOf(item.name) === -1) {
-              if (item.type === 'file') {
-                let newPath = `${item.parent}/${item.name}`
-                files += `<tr>
-                  <td>
-                    <a href="${newPath}">
-                      <svg class="image is-24x24"><use xlink:href="#document-g"
-                      style="visibility: visible"></use></svg>
-                    </a>
-                  </td>
-                  <td>
-                    <a href="${newPath}">${item.name}</a>
-                  </td>
-                  <td class="cell-shrink">
-                    <a href="${newPath}">${item.time}</a>
-                  </td>
-                </tr>`
-              }
-              if (item.type === 'directory') {
-                // let newPath = encodeURI(path.join('/') + `/${item.name}`)
-                let newPath = encodeURI(item.parent + `/${item.name}`)
-                files += `<tr>
-                  <td>
-                    <a href="#path=${newPath}">
-                      <svg class="image is-24x24"><use xlink:href="#briefcase-g"></use></svg>
-                    </a>
-                  </td>
-                  <td>
-                    <a href="#path=${newPath}">${item.name}</a>
-                  </td>
-                  <td class="cell-shrink">
-                    <a href="#path=${newPath}">&nbsp;</a>
-                  </td>
-                </tr>`
-              }
-            }
-          }
-          document.querySelector('.files').innerHTML = files
-      }
-      
-      function updateContent () {
-        getDirectory(function () {
-          if (tree.length > 0) {
-            let content = getDirectoryContent(0, tree)
-            draw(content)
-          }
-        })
-      }
-      
-      function clearSearch () {
-        document.querySelector('#search').value = ''
-        updateContent()
-      }
-      
-      function doSearch (event = {}) {
-        if (event.keyCode === 13) {
-          let term = document.querySelector('#search').value.toLowerCase()
-          if (term.length === 0) {
-            updateContent()
-          } else {
-            setBreadcrumbs(['Search Results'])
-            draw(search(term, [], tree))
-          }
-        }
-      }
-      
-      
-      function search (term, parent, children) {
-        let found = []
-        for (let item of children) {
-          if (item.type !== 'report') {
-            let _parent = parent.slice()
-            if (item.name.toLowerCase().indexOf(term) > -1) {
-              found.push({ parent: _parent.join('/'), name: item.name, type: item.type, time: item.time })
-            }
-            if (item.type === 'directory') {
-              _parent.push(item.name)
-              found = found.concat(search(term, _parent.slice(), item.contents))
-            }
-          }
-        }
-        return found
-      }
-      
-      function encodeURI(str) {
-        str.replace('&', '%26')
-          .replace('#', '%23')
-        return str
-      }
-      
-      function showMessage(message = '', title = 'Error!', className = 'is-danger') {
-        let html = `
-          <td colspan="3">
-            <div class="section">
-              <div class="message has-text-centered ${className}">
-                <h1 class='title'>${title}</h1>
-                <p>
-                  ${message}
-                </p>
-              </div>
-            </div>
-          </td>
-        `
-        document.querySelector('.files').innerHTML = html
-      }
-      
-      function updateStatistics () {
-        for (const item of tree) {
-          if (item.type === 'report') {
-            document.querySelector('.num-files').innerHTML = item.files
-            document.querySelector('.num-dirs').innerHTML = item.directories
-          }
-        }
-      }
-      
-      window.fetch('./files.json')
-        .then(function (response) {
-          if (response.status === 200) {
-            return response.json()
-          }
-          if (response.status === 404) {
-            showMessage('Could not load files.json. Did you forget to create one?')
-          }
-          if (response.status === 403) {
-            showMessage('Could not load files.json because the web server is not allowed to read it. Did you set correct file permission?')
-          }
-          return []
-        })
-        .then(function (data) {
-          tree = data
-          updateContent()
-          updateStatistics()
-          window.onhashchange = updateContent
-        })
-        .catch(function (error) {
-          showMessage('Unexpected error happened while loading files.json. For a more detailed error message, see browser developer console.')
-          console.log(error)
-        })
-    </script>
   </head>
   <body>
-    <div class="container">
+    <div class="container" id="app">
       <div class="section columns is-8">
         <div class="column">
           <h1 class="title">Folder Contents</h1>
         </div>
         <div class="column is-4">
           <p class="control has-icons-left has-icons-right">
-            <input class="input is-rounded" id="search" onkeyup="doSearch(event)"/>
+            <input class="input is-rounded" v-model="searchString" v-on:keyup="this.onSearch" />
             <svg class="icon is-left"><use xlink:href="#search-g"></use></svg>
-            <svg class="icon is-right has-fill-grey-light"><use class="clear-button" onclick="clearSearch()" xlink:href="#cross-g"></use></svg>
+            <svg class="icon is-right has-fill-grey-light"><use class="clear-button" v-on:click="this.clearSearch" xlink:href="#cross-g"></use></svg>
           </p>
         </div>
       </div>
@@ -246,17 +47,72 @@
             </tr>
           </thead>
           <tbody class="files">
-            <tr>
-              <td>
+
+            <!--
+              Loading...
+            -->
+            <tr v-if="loading">
+              <td colspan="3">
                 Loading...
               </td>
+            </tr>
+
+            <!--
+              Messagebox
+            -->
+            <tr v-if="message.open">
+              <td colspan="3">
+                <div class="section">
+                  <div :class="`message has-text-centered ${message.addClass}`">
+                    <h1 class='title'>{{ message.title }}</h1>
+                    <p>
+                      {{ message.message }}
+                    </p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+  
+            <!--
+              Return to parent directory
+            -->
+            <tr v-if="parent !== ''">
+              <td>
+                <a :href="parent">
+                  <svg class="image is-24x24"><use xlink:href="#key_return-g" style="visibility: visible"></use></svg>
+                </a>
+              </td>
+              <td>
+                <a :href="parent">Parent</a>
+              </td>
+              <td class="cell-shrink">
+                <a :href="parent"></a>
+              </td>
+            </tr>
+
+            <!--
+              List files and directories
+            -->
+            <tr v-for="(item, index) in items" :key="`${item.name}_${index}`">
+              <td>
+                <a :href="item.destination">
+                  <svg class="image is-24x24"><use :xlink:href="`#${item.icon}`" style="visibility: visible"></use></svg>
+                </a>
+              </td>
+              <td>
+                <a :href="item.destination">{{item.name}}</a>
+              </td>
+              <td class="cell-shrink">
+                <a :href="item.destination">{{item.time}}</a>
+              </td>
+
             </tr>
           </tbody>
         </table>
       </div>
       <div class="section">
         <p>
-          <span class='num-files'>0</span> files in <span class='num-dirs'>0</span> directories.
+          {{ report.files }} files in {{ report.directories }} directories.
         </p>
         <p>
           Update: <code>tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json</code>
@@ -269,4 +125,152 @@
     <svg style="width: 0; height: 0" viewBox="0 0 24 24" id="search-g"><path d="M16.12 17.534a8.5 8.5 0 111.414-1.414l4.815 4.815a1 1 0 01-1.414 1.414l-4.815-4.815zm-5.262-.176a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"></path></svg>
     <svg style="width: 0; height: 0" viewBox="0 0 25 24" id="cross-g"><path fill-rule="evenodd" d="M12.5 22c-5.523 0-10-4.477-10-10s4.477-10 10-10 10 4.477 10 10-4.477 10-10 10zm0-11.374L9.908 8.035a.971.971 0 10-1.373 1.373L11.126 12l-2.591 2.592a.971.971 0 001.373 1.373l2.592-2.591 2.592 2.591a.971.971 0 001.373-1.373L13.874 12l2.591-2.592a.971.971 0 00-1.373-1.373L12.5 10.626z"></path></svg>
   </body>
+  <script>
+    /*
+      item: { name, time, icon, destination }
+    */
+    let App = new Vue({
+      el: '#app',
+      mounted: function () {
+        this.getTree()
+      },
+      methods: {
+        getTree: function () {
+          this.loading = true
+          return window.fetch('./files.json')
+            .then(function (response) {
+              this.loading = false
+              if (response.ok) {
+                try {
+                  return response.json()
+                } catch (err) {
+                  console.log(err)
+                  throw new Error('Could not parse files.json.')
+                }
+              } else if (response.status === 403) {
+                throw new Error('Could not read files.json due to insufficient permission.')
+              } else if (response.status === 404) {
+                throw new Error('Could not find files.json. Did you create one?')
+              } else {
+                throw new Error('Shoot...')
+              }
+            }.bind(this))
+            .then(function (data) {
+              if (data[0].type === 'report') {
+                this.tree = data[1].contents
+                this.report = data[0]
+              } else {
+                this.tree = data[0].contents
+                this.report = data[1]
+              }
+              this.updateContent()
+              window.onhashchange = this.updateContent.bind(this)
+            }.bind(this))
+            .catch(function (err) {
+              console.log(err)
+              this.setMessage(err)
+            }.bind(this))
+        },
+        updateContent: function () {
+          // Example: #path=a/b/c
+          let bits = decodeURIComponent(window.location.hash.replace('#', '')).split('&')
+          let newPath = []
+          for (let bit of bits) {
+            let [key, value] = bit.split('=')
+            if (key === 'path') {
+              if (value !== '') {
+                newPath = decodeURI(value).split('/')
+              }
+              break
+            }
+          }
+          this.path = newPath
+          this.items = this.getDirectoryContent(0, this.tree)
+        },
+        getDirectoryContent: function (index, children) {
+          if (index === this.path.length) {
+            let parent = this.path.join('/')
+
+            return children.map(function (item) {
+              let icon = 'document-g'
+              let destination = parent !== '' ? `./${parent}/${item.name}` : `./${item.name}`
+              if (item.type === 'directory') {
+                icon = 'briefcase-g'
+                destination = parent !== '' ? `#path=${parent}/${item.name}` : `#path=${item.name}`
+              }
+              return { ...item, parent, destination, icon }
+            })
+          } else {
+            let dirName = this.path[index]
+            for (let item of children) {
+              if (item.type === 'directory' && item.name === dirName) {
+                return this.getDirectoryContent(index + 1, item.contents)
+              }
+            }
+            return []
+          }
+        },
+        clearSearch: function () {
+          this.searchString = ''
+        },
+        onSearch: function (event = {}) {
+          console.log('onSearch()')
+          if (event.keyCode === 13) {
+            if (this.searchString.length === 0) {
+              this.updateContent()
+            } else {
+              this.items = this.search(this.searchString, [], this.tree)
+            }
+          }
+        },
+        search: function (term, parent, children) {
+          let found = []
+          for (let item of children) {
+            let _parent = parent.slice()
+            if (item.name.toLowerCase().indexOf(term) > -1) {
+
+              let icon = 'document-g'
+              let _parentString = _parent.join('/')
+              let destination = _parentString !== '' ? `./${_parentString}/${item.name}` : `./${item.name}`
+              if (item.type === 'directory') {
+                icon = 'briefcase-g'
+                destination = _parentString !== '' ? `#path=${_parentString}/${item.name}` : `#path=${item.name}`
+              }
+              found.push({ parent: _parentString, destination, ...item })
+              // found.push({ parent: _parent.join('/'), name: item.name, type: item.type, time: item.time })
+            }
+            if (item.type === 'directory') {
+              _parent.push(item.name)
+              found = found.concat(this.search(term, _parent.slice(), item.contents))
+            }
+          }
+          return found
+        },
+        setMessage: function (message = '', title = 'Error!', addClass = 'is-danger') {
+          this.message = { message, title, addClass, open: true }
+        }
+      },
+      watch: {
+        path: function (path) {
+          let parent = this.path.slice(0, this.path.length - 1).join('/')
+          this.parent = path.length > 0 ? `#path=${parent}` : ''
+        }
+      },
+      data: {
+        searchString: '',
+        loading: false,
+        message: {
+          title: '',
+          title: '',
+          addClass: '',
+          open: false
+        },
+        items: [],
+        parent: '',
+        path: [],
+        tree: {},
+        report: { files: 0, directories: 0 }
+      }
+    })
+  </script>
 </html>

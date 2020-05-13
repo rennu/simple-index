@@ -1,0 +1,28 @@
+{
+  "name": "simple-index",
+  "version": "1.0.0",
+  "description": "1. Copy index.html to the directory you wish to index 2. Run `tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json` 3. Done.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rennu/simple-index.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rennu/simple-index/issues"
+  },
+  "homepage": "https://github.com/rennu/simple-index#readme",
+  "devDependencies": {
+    "eslint": "^7.0.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-vue": "^6.2.2"
+  }
+}

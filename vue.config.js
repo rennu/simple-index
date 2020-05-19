@@ -5,7 +5,8 @@ module.exports = {
     plugins: [
       new HtmlWebpackPlugin({
         template: 'public/index.html', // template file to embed the source
-        inlineSource: '.(js|css)$' // embed all javascript and css inline
+        inlineSource: '.(js|css)$', // embed all javascript and css inline
+        title: 'Index of...'
       }),
       new HtmlWebpackInlineSourcePlugin(HtmlWebpackPlugin)
     ]

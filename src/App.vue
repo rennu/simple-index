@@ -109,11 +109,9 @@
 <script>
 import axios from 'axios'
 
-function encodeURI (str) {
-  str.replace('&', '%26')
-    .replace('#', '%23')
-  return str
-}
+const ignoreFiles = ['index.html', 'files.json']
+
+const encodeURI = str => str.replace('&', '%26').replace('#', '%23')
 
 export default {
   mounted: function () {
@@ -136,7 +134,7 @@ export default {
               this.report = data[1]
             }
             this.updateContent()
-            window.onhashchange = this.updateContent.bind(this)
+            window.onhashchange = this.updateContent
           } else if (response.status === 403) {
             throw new Error('Could not read files.json due to insufficient permission.')
           } else if (response.status === 404) {
@@ -151,10 +149,10 @@ export default {
         })
     },
     updateContent: function () {
-      let bits = decodeURIComponent(window.location.hash.replace('#', '')).split('&')
+      const bits = decodeURIComponent(window.location.hash.replace('#', '')).split('&')
       let newPath = []
-      for (let bit of bits) {
-        let [key, value] = bit.split('=')
+      for (const bit of bits) {
+        const [key, value] = bit.split('=')
         if (key === 'path') {
           if (value !== '') {
             newPath = decodeURI(value).split('/')
@@ -167,21 +165,25 @@ export default {
     },
     getDirectoryContent: function (index, children) {
       if (index === this.path.length) {
-        let _parentString = encodeURI(this.path.join('/'))
+        const _parentString = encodeURI(this.path.join('/'))
 
-        return children.map(item => {
-          let icon = 'document-g'
-          let name = encodeURI(item.name)
-          let destination = _parentString !== '' ? `./${_parentString}/${name}` : `./${name}`
-          if (item.type === 'directory') {
-            icon = 'briefcase-g'
-            destination = _parentString !== '' ? `#path=${_parentString}/${name}` : `#path=${name}`
+        const content = []
+        for (const item of children) {
+          if (!ignoreFiles.includes(item.name.toLowerCase())) {
+            let icon = 'document-g'
+            const name = encodeURI(item.name)
+            let destination = _parentString !== '' ? `./${_parentString}/${name}` : `./${name}`
+            if (item.type === 'directory') {
+              icon = 'briefcase-g'
+              destination = _parentString !== '' ? `#path=${_parentString}/${name}` : `#path=${name}`
+            }
+            content.push({ name: item.name, time: item.time, type: item.type, destination, icon })
           }
-          return { name: item.name, time: item.time, type: item.type, destination, icon }
-        })
+        }
+        return content
       } else {
-        let dirName = this.path[index]
-        for (let item of children) {
+        const dirName = this.path[index]
+        for (const item of children) {
           if (item.type === 'directory' && item.name === dirName) {
             return this.getDirectoryContent(index + 1, item.contents)
           }
@@ -203,18 +205,17 @@ export default {
     },
     search: function (term, parent, children) {
       let found = []
-      for (let item of children) {
-        let _parent = parent.slice()
+      for (const item of children) {
+        const _parent = parent.slice()
         if (item.name.toLowerCase().indexOf(term) > -1) {
           let icon = 'document-g'
-          let _parentString = encodeURI(_parent.join('/'))
-          let nameEncoded = encodeURI(item.name)
+          const _parentString = encodeURI(_parent.join('/'))
+          const nameEncoded = encodeURI(item.name)
           let destination = _parentString !== '' ? `./${_parentString}/${name}` : `./${name}`
           if (item.type === 'directory') {
             icon = 'briefcase-g'
             destination = _parentString !== '' ? `#path=${_parentString}/${name}` : `#path=${name}`
           }
-          
           found.push({ destination, name: item.name, time: item.time, type: item.type, icon, nameEncoded })
         }
         if (item.type === 'directory') {
@@ -230,13 +231,13 @@ export default {
   },
   watch: {
     path: function (path) {
-      let parent = this.path.slice(0, this.path.length - 1).join('/')
+      const parent = this.path.slice(0, this.path.length - 1).join('/')
       this.parent = path.length > 0 ? `#path=${parent}` : ''
 
       // Breadcrumbs
-      let bc = [{ text: 'Root', path: '' }]
-      let dTree = []
-      for (let p of this.path.slice(0, this.path.length)) {
+      const bc = [{ text: 'Root', path: '' }]
+      const dTree = []
+      for (const p of this.path.slice(0, this.path.length)) {
         dTree.push(p)
         bc.push({ text: `${p}`, path: dTree.join('/') })
       }

@@ -15,7 +15,7 @@
     <div class="section box is-raised">
       <div class="box">
         <span v-for="(breadcrumb, index) in breadCrumbs" class="breadcrumb" :key="`bc_${index}`">
-          <a :href="breadcrumb.path"><span style="color: #222222; font-weight: bold">/</span>{{ breadcrumb.text }}</a>
+          <a :href='`#path=${breadcrumb.path}`'><span style="color: #222222; font-weight: bold">/</span>{{ breadcrumb.text }}</a>
         </span>
       </div>
       <table class="table is-hoverable">
@@ -234,11 +234,11 @@ export default {
       this.parent = path.length > 0 ? `#path=${parent}` : ''
 
       // Breadcrumbs
-      let bc = [{ text: 'Root', path: '#path=' }]
-      let dTree = ''
+      let bc = [{ text: 'Root', path: '' }]
+      let dTree = []
       for (let p of this.path.slice(0, this.path.length)) {
-        dTree += `${p}`
-        bc.push({ text: `${p}`, path: dTree })
+        dTree.push(p)
+        bc.push({ text: `${p}`, path: dTree.join('/') })
       }
       this.breadCrumbs = bc
     }

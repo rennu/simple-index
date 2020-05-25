@@ -4,6 +4,8 @@ node_modules
 dist/*
 !dist/index.html
 
+public/files.json
+
 # local env files
 .env.local
 .env.*.local

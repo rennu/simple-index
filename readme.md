@@ -3,7 +3,7 @@
 
 ## Using precompiled file
 1. Copy dist/index.html file to the directory you wish to index
-2. Run `tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json`
+2. Run `tree -J -D -s --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json`
 3. Done.
 
 ## Building
@@ -13,5 +13,5 @@ npx yarn
 npx yarn build
 ```
 2. Copy dist/index.html file to the directory you wish to index
-3. Run `tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json`
+3. Run `tree -J -D -s --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json`
 4. Done.

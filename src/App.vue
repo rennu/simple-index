@@ -23,6 +23,7 @@
           <tr>
             <th class="cell-shrink">&nbsp;</th>
             <th>Name</th>
+            <th class="cell-shrink">Size</th>
             <th class="cell-shrink">Last Modified</th>
           </tr>
         </thead>
@@ -83,6 +84,9 @@
               <a :href="item.destination">{{item.name}}</a>
             </td>
             <td class="cell-shrink">
+              <a :href="item.destination">{{item.size}}</a>
+            </td>
+            <td class="cell-shrink">
               <a :href="item.destination">{{item.time}}</a>
             </td>
 
@@ -95,7 +99,7 @@
         {{ report.files }} files in {{ report.directories }} directories.
       </p>
       <p>
-        Update: <code>tree -J -D --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json</code>
+        Update: <code>tree -J -D -s --dirsfirst --timefmt '%H:%M:%S %d.%m.%Y' > files.json</code>
       </p>
     </div>
     <svg style="width: 0; height: 0" viewBox="0 0 24 24" id="briefcase-g"><path d="M19 6.5h-3v-1a3 3 0 00-3-3h-2a3 3 0 00-3 3v1H5a3 3 0 00-3 3v9a3 3 0 003 3h14a3 3 0 003-3v-9a3 3 0 00-3-3zm-9-1a1 1 0 011-1h2a1 1 0 011 1v1h-4v-1zm10 13a1 1 0 01-1 1H5a1 1 0 01-1-1V13a21.71 21.71 0 008 1.53A21.75 21.75 0 0020 13v5.5zm0-7.69a19.89 19.89 0 01-16 0V9.5a1 1 0 011-1h14a1 1 0 011 1v1.31z"></path></svg>
@@ -105,6 +109,30 @@
     <svg style="width: 0; height: 0" viewBox="0 0 25 24" id="cross-g"><path fill-rule="evenodd" d="M12.5 22c-5.523 0-10-4.477-10-10s4.477-10 10-10 10 4.477 10 10-4.477 10-10 10zm0-11.374L9.908 8.035a.971.971 0 10-1.373 1.373L11.126 12l-2.591 2.592a.971.971 0 001.373 1.373l2.592-2.591 2.592 2.591a.971.971 0 001.373-1.373L13.874 12l2.591-2.592a.971.971 0 00-1.373-1.373L12.5 10.626z"></path></svg>
   </div>
 </template>
+
+<style>
+  table {
+    width: 100%;
+  }
+  a {
+    display: block;
+    width: 100%;
+  }
+  .cell-shrink {
+    width: 0.1%;
+    white-space: nowrap;
+  }
+  .clear-button {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .breadcrumb {
+    float: left;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
 
 <script>
 import axios from 'axios'
@@ -140,7 +168,7 @@ export default {
           } else if (response.status === 404) {
             throw new Error('Could not find files.json. Did you create one?')
           } else {
-            throw new Error('Shoot...Something really went wrong.')
+            throw new Error('Shoot...Something went wrong.')
           }
         })
         .catch(err => {
@@ -173,11 +201,21 @@ export default {
             let icon = 'document-g'
             const name = encodeURI(item.name)
             let destination = _parentString !== '' ? `./${_parentString}/${name}` : `./${name}`
+            let size = ''
             if (item.type === 'directory') {
               icon = 'briefcase-g'
               destination = _parentString !== '' ? `#path=${_parentString}/${name}` : `#path=${name}`
             }
-            content.push({ name: item.name, time: item.time, type: item.type, destination, icon })
+            if (item.type === 'file') {
+              if (item.size > 1073741824) {
+                size = `${(item.size / 1073741824).toFixed(2)}GB`
+              } else if (item.size < 1073741824 && item.size > 1048576) {
+                size = `${(item.size / 1048576).toFixed(2)}MB`
+              } else {
+                size = `${(item.size / 1024).toFixed(2)}kB`
+              }
+            }
+            content.push({ size, name: item.name, time: item.time, type: item.type, destination, icon })
           }
         }
         return content
@@ -264,27 +302,3 @@ export default {
   }
 }
 </script>
-
-<style>
-  table {
-    width: 100%;
-  }
-  a {
-    display: block;
-    width: 100%;
-  }
-  .cell-shrink {
-    width: 0.1%;
-    white-space: nowrap;
-  }
-  .clear-button {
-    pointer-events: auto;
-    cursor: pointer;
-  }
-  .breadcrumb {
-    float: left;
-  }
-  .hidden {
-    display: none;
-  }
-</style>
